@@ -1,6 +1,9 @@
 package com.project.lms.service;
 
+import com.project.lms.dto.RoleRequestDTO;
 import com.project.lms.dto.RoleResponseDTO;
+import com.project.lms.entity.Role;
+import com.project.lms.exception.DuplicateResourceException;
 import com.project.lms.repository.RoleRepository;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +26,36 @@ public class RoleService {
 
         return roleRepository.findAll()
                 .stream()
-                .map(role -> {
-                    RoleResponseDTO dto = new RoleResponseDTO();
-                    dto.setId(role.getId());
-                    dto.setName(role.getName());
-                    dto.setCreatedAt(role.getCreatedAt());
-                    dto.setUpdatedAt(role.getUpdatedAt());
-                    return dto;
-                })
+                .map(role -> RoleResponseDTO.builder()
+                        .id(role.getId())
+                        .name(role.getName())
+                        .createdAt(role.getCreatedAt())
+                        .updatedAt(role.getUpdatedAt())
+                        .build())
                 .toList();
+    }
+    public RoleResponseDTO createRole(RoleRequestDTO request) {
+
+        log.info("Creating new role: {}", request.getName());
+
+        if (roleRepository.findByName(request.getName()).isPresent()) {
+            log.warn("Role already exists: {}", request.getName());
+            throw new DuplicateResourceException("Role already exists");
+        }
+
+        Role role = Role.builder()
+                .name(request.getName().toUpperCase())
+                .build();
+
+        roleRepository.save(role);
+
+        log.info("Role created successfully with id: {}", role.getId());
+
+        return RoleResponseDTO.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .createdAt(role.getCreatedAt())
+                .updatedAt(role.getUpdatedAt())
+                .build();
     }
 }

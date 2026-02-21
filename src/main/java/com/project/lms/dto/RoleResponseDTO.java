@@ -1,11 +1,12 @@
 package com.project.lms.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-
+@Builder
 @Data
 public class RoleResponseDTO {
 
