@@ -1,4 +1,8 @@
+
 package com.project.lms.entity;
 
-public class UserStatus {
+public enum UserStatus {
+    PENDING,
+    APPROVED,
+    REJECTED
 }
