@@ -21,7 +21,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Username (in your API it's same as email)
     @Column(nullable = false)
     private String username;
 
@@ -34,12 +33,10 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    // USER / ADMIN
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    // Organization reference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
@@ -54,7 +51,6 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Automatically set timestamps
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

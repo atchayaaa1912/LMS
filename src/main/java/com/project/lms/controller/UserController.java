@@ -1,11 +1,19 @@
 package com.project.lms.controller;
 
+import com.project.lms.dto.AddUserRequestDTO;
+import com.project.lms.dto.UserExportDTO;
+import com.project.lms.dto.UserImportDTO;
+import com.project.lms.dto.UserListResponseDTO;
 import com.project.lms.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -30,5 +38,47 @@ public class UserController {
         log.info("PUT /api/users/{}/reject called", id);
 
         return ResponseEntity.ok(userService.rejectUser(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UserListResponseDTO>> listUsers() {
+
+        log.info("GET /api/users called");
+
+        return ResponseEntity.ok(userService.listUsers());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserListResponseDTO> getUserById(@PathVariable Long id) {
+
+        String currentUserEmail = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        return ResponseEntity.ok(userService.getUserById(id, currentUserEmail));
+    }
+
+    @PostMapping
+    public ResponseEntity<UserListResponseDTO> addUser(
+            @Valid @RequestBody AddUserRequestDTO request) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userService.addUser(request));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<List<UserExportDTO>> exportUsers() {
+
+        log.info("GET /api/users/export called");
+
+        return ResponseEntity.ok(userService.exportUsers());
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<?> importUsers(
+            @RequestBody List<UserImportDTO> importList) {
+
+        return ResponseEntity.ok(userService.importUsers(importList));
     }
 }

@@ -8,16 +8,13 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class UserResponseDTO {
+public class UserListResponseDTO {
+
     private Long id;
     private String username;
     private String name;
     private String email;
-    private String role;
     private String status;
-
-    @JsonProperty("organizationId")
-    private Long organizationId;
 
     @JsonProperty("created_at")
     private LocalDateTime createdAt;

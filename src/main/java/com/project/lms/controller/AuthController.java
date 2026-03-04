@@ -2,17 +2,12 @@
 package com.project.lms.controller;
 
 import com.project.lms.dto.LoginRequestDTO;
-import com.project.lms.dto.RegisterRequestDTO;
+import com.project.lms.dto.RegisterDTO;
 import com.project.lms.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
         import java.util.Map;
@@ -27,7 +22,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(
-            @Valid @RequestBody RegisterRequestDTO request) {
+            @Valid @RequestBody RegisterDTO request) {
 
         log.info("POST /api/auth/register called");
 
@@ -42,6 +37,7 @@ public class AuthController {
 
         return ResponseEntity.ok(authService.login(request));
     }
+
     @GetMapping("/test")
     public String test() {
         return "AuthController working";

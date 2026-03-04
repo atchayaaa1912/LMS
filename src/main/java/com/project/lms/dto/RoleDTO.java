@@ -1,16 +1,22 @@
 package com.project.lms.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Builder
 @Data
-public class RoleResponseDTO {
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RoleDTO {
 
     private Long id;
+    
+    @NotBlank(message = "Role name is required")
     private String name;
 
     @JsonProperty("created_at")
