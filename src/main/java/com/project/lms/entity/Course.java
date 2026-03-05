@@ -1,8 +1,7 @@
 package com.project.lms.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.beans.Visibility;
 import java.time.LocalDateTime;
@@ -11,6 +10,9 @@ import java.time.LocalDateTime;
 @Table(name = "courses")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Course {
 
     @Id

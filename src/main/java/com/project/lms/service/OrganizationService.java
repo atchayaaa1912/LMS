@@ -47,22 +47,26 @@ public class OrganizationService {
         this.userRepository = userRepository;
     }
 
+
     public List<OrganizationDTO> getAllOrganizations() {
-        return organizationRepository.findAll().stream().map(this::entityTODto).toList();
+        return organizationRepository.findAll()
+                .stream()
+                .map(this::entityTODto)
+                .toList();
     }
 
     public OrganizationDTO createOrganization(OrganizationDTO organization) throws UnauthorizedActionException {
         User currentUser = getCurrentUser();
-        if(!"ADMIN".equalsIgnoreCase(currentUser.getRole().getName())){
-            throw new UnauthorizedActionException("Only admin can create organization");
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole().getName())) {
+            throw new UnauthorizedActionException("ORG_ADMIN_ONLY");
         }
 
-        if(organizationRepository.existsByCode(organization.getCode())){
-            throw new DuplicateResourceException("Organization code already exits");
+        if (organizationRepository.existsByCode(organization.getCode())) {
+            throw new DuplicateResourceException("ORG_CODE_EXISTS");
         }
 
-        if (organizationRepository.existsByName(organization.getName())){
-            throw new DuplicateResourceException("Orgaization name already exists");
+        if (organizationRepository.existsByName(organization.getName())) {
+            throw new DuplicateResourceException("ORG_NAME_EXISTS");
         }
 
         Organization saved= organizationRepository.save(dtoToEntity(organization));

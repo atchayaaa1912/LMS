@@ -6,7 +6,10 @@ import com.project.lms.entity.Organization;
 import com.project.lms.entity.Role;
 import com.project.lms.entity.User;
 import com.project.lms.entity.UserStatus;
+import com.project.lms.exception.AccountStatusException;
 import com.project.lms.exception.DuplicateResourceException;
+import com.project.lms.exception.InvalidCredentialsException;
+import com.project.lms.exception.ResourceNotFoundException;
 import com.project.lms.repository.*;
 import com.project.lms.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -28,21 +31,19 @@ public class AuthService {
     private final JwtService jwtService;
 
 
+
     public Map<String, Object> register(RegisterDTO request) {
 
-        log.info("Register request received for email: {}", request.getEmail());
-
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new DuplicateResourceException("Email already exists");
+            throw new DuplicateResourceException("EMAIL_ALREADY_EXISTS");
         }
 
-
         Role role = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("USER role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_ROLE_NOT_FOUND"));
 
         Organization organization = organizationRepository
                 .findById(request.getOrganizationId())
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("ORG_NOT_FOUND"));
 
         User user = User.builder()
                 .name(request.getName())
@@ -57,7 +58,7 @@ public class AuthService {
         userRepository.save(user);
 
         return Map.of(
-                "message", "Registration successful. Pending admin approval.",
+                "message", "REGISTRATION_SUCCESS",
                 "id", user.getId()
         );
     }
@@ -67,32 +68,25 @@ public class AuthService {
     public Map<String, Object> login(LoginRequestDTO request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("INVALID_CREDENTIALS"));
 
         if (!user.getOrganization().getId().equals(request.getOrganizationId())) {
-            throw new RuntimeException("Invalid organization");
+            throw new InvalidCredentialsException("INVALID_ORGANIZATION");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("INVALID_CREDENTIALS");
         }
 
         if (user.getStatus() == UserStatus.PENDING) {
-            return Map.of(
-                    "message", "Account pending approval",
-                    "code", "ACCOUNT_PENDING"
-            );
+            throw new AccountStatusException("ACCOUNT_PENDING", "ACCOUNT_PENDING");
         }
 
         if (user.getStatus() == UserStatus.REJECTED) {
-            return Map.of(
-                    "message", "Account rejected",
-                    "code", "ACCOUNT_REJECTED"
-            );
+            throw new AccountStatusException("ACCOUNT_REJECTED", "ACCOUNT_REJECTED");
         }
 
         String token = jwtService.generateToken(user);
-
 
         UserResponseDTO responseDTO = UserResponseDTO.builder()
                 .id(user.getId())
@@ -108,5 +102,4 @@ public class AuthService {
                 "user", responseDTO
         );
     }
-
 }

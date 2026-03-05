@@ -36,7 +36,7 @@ public class RoleService {
     public RoleDTO createRole(RoleDTO request) {
 
         if (roleRepository.findByName(request.getName()).isPresent()) {
-            throw new DuplicateResourceException("Role already exists");
+            throw new DuplicateResourceException("ROLE_ALREADY_EXISTS");
         }
 
         Role role = dtoToEntity(request);

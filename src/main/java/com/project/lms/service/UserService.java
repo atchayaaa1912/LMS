@@ -1,20 +1,19 @@
 package com.project.lms.service;
 
-import com.project.lms.dto.AddUserRequestDTO;
-import com.project.lms.dto.UserExportDTO;
-import com.project.lms.dto.UserImportDTO;
-import com.project.lms.dto.UserListResponseDTO;
+import com.project.lms.dto.*;
 import com.project.lms.entity.Organization;
 import com.project.lms.entity.Role;
 import com.project.lms.entity.User;
 import com.project.lms.entity.UserStatus;
 import com.project.lms.exception.DuplicateResourceException;
+import com.project.lms.exception.ResourceNotFoundException;
 import com.project.lms.exception.UserNotFoundException;
 import com.project.lms.repository.OrganizationRepository;
 import com.project.lms.repository.RoleRepository;
 import com.project.lms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,144 +24,157 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
+
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final OrganizationRepository organizationRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public Map<String, Object> approveUser(Long id) {
 
-        log.info("Approving user with id: {}", id);
+
+    private User getCurrentUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("CURRENT_USER_NOT_FOUND"));
+    }
+
+    private void validateAdmin(User user) {
+        if (!user.getRole().getName().equalsIgnoreCase("ADMIN")) {
+            throw new AccessDeniedException("ADMIN_ONLY");
+        }
+    }
+
+    private User dtoToEntity(AddUserRequestDTO dto, Role role, Organization org) {
+        return User.builder()
+                .username(dto.getUsername())
+                .name(dto.getName())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .role(role)
+                .organization(org)
+                .status(UserStatus.APPROVED)
+                .build();
+    }
+
+    private UserListResponseDTO entityToDto(User user) {
+        return UserListResponseDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .name(user.getName())
+                .email(user.getEmail())
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+
+
+    public UserListResponseDTO addUser(AddUserRequestDTO request, String currentUserEmail) {
+
+        User currentUser = getCurrentUser(currentUserEmail);
+        validateAdmin(currentUser);
+
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("EMAIL_ALREADY_EXISTS");
+        }
+
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new DuplicateResourceException("USERNAME_ALREADY_EXISTS");
+        }
+
+        Role role = roleRepository.findByName(request.getRole().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("ROLE_NOT_FOUND"));
+
+        Organization org = organizationRepository.findById(request.getOrganizationId())
+                .orElseThrow(() -> new ResourceNotFoundException("ORG_NOT_FOUND"));
+
+        User saved = userRepository.save(dtoToEntity(request, role, org));
+
+        return entityToDto(saved);
+    }
+
+
+    public Map<String, Object> approveUser(Long id, String currentUserEmail) {
+
+        User currentUser = getCurrentUser(currentUserEmail);
+        validateAdmin(currentUser);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
+
+        if (user.getStatus() == UserStatus.APPROVED) {
+            throw new IllegalStateException("USER_ALREADY_APPROVED");
+        }
 
         user.setStatus(UserStatus.APPROVED);
         userRepository.save(user);
 
-        log.info("User approved successfully: {}", id);
-
         return Map.of(
-                "message", "User approved",
+                "message", "USER_APPROVED_SUCCESS",
                 "id", id
         );
     }
-    public Map<String, Object> rejectUser(Long id) {
 
-        log.info("Rejecting user with id: {}", id);
+
+    public Map<String, Object> rejectUser(Long id, String currentUserEmail) {
+
+        User currentUser = getCurrentUser(currentUserEmail);
+        validateAdmin(currentUser);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() ->
-                        new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
 
         if (user.getStatus() == UserStatus.REJECTED) {
-            throw new IllegalStateException("User is already rejected");
+            throw new IllegalStateException("USER_ALREADY_REJECTED");
+        }
+
+        if (user.getStatus() == UserStatus.APPROVED) {
+            throw new IllegalStateException("APPROVED_USER_CANNOT_REJECT");
         }
 
         user.setStatus(UserStatus.REJECTED);
         userRepository.save(user);
 
-        log.info("User rejected successfully: {}", id);
-
         return Map.of(
-                "message", "User rejected",
+                "message", "USER_REJECTED_SUCCESS",
                 "id", id
         );
     }
 
-    public List<UserListResponseDTO> listUsers() {
 
-        log.info("Fetching all users");
+    public List<UserListResponseDTO> listUsers(String currentUserEmail) {
+
+        User currentUser = getCurrentUser(currentUserEmail);
+        validateAdmin(currentUser);
 
         return userRepository.findAll()
                 .stream()
-                .map(user -> UserListResponseDTO.builder()
-                        .id(user.getId())
-                        .username(user.getUsername())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .status(user.getStatus().name())
-                        .createdAt(user.getCreatedAt())
-                        .updatedAt(user.getUpdatedAt())
-                        .build())
+                .map(this::entityToDto)
                 .toList();
     }
 
+
     public UserListResponseDTO getUserById(Long id, String currentUserEmail) {
 
-        log.info("Fetching user with id: {}", id);
-
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
 
-        // Get current logged-in user
-        User currentUser = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
+        User currentUser = getCurrentUser(currentUserEmail);
 
-        boolean isAdmin = currentUser.getRole().getName().equals("ADMIN");
+        boolean isAdmin = currentUser.getRole().getName().equalsIgnoreCase("ADMIN");
         boolean isSameUser = currentUser.getId().equals(id);
 
         if (!isAdmin && !isSameUser) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("ACCESS_DENIED");
         }
 
-        return UserListResponseDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .name(user.getName())
-                .email(user.getEmail())
-                .status(user.getStatus().name())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .build();
+        return entityToDto(user);
     }
 
-    private final RoleRepository roleRepository;
-    private final OrganizationRepository organizationRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserListResponseDTO addUser(AddUserRequestDTO request) {
+    public List<UserExportDTO> exportUsers(String currentUserEmail) {
 
-        log.info("Admin creating user: {}", request.getEmail());
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new DuplicateResourceException("Email already exists");
-        }
-
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new DuplicateResourceException("Username already exists");
-        }
-
-
-        Role role = roleRepository.findByName(request.getRole().toUpperCase())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
-
-        Organization org = organizationRepository.findById(request.getOrganizationId())
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
-
-        User user = User.builder()
-                .username(request.getUsername())
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(role)
-                .organization(org)
-                .status(UserStatus.APPROVED)
-                .build();
-
-        userRepository.save(user);
-
-        return UserListResponseDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .name(user.getName())
-                .email(user.getEmail())
-                .status(user.getStatus().name())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .build();
-    }
-
-    public List<UserExportDTO> exportUsers() {
-
-        log.info("Exporting users");
+        User currentUser = getCurrentUser(currentUserEmail);
+        validateAdmin(currentUser);
 
         return userRepository.findAll()
                 .stream()
@@ -179,15 +191,16 @@ public class UserService {
                 .toList();
     }
 
-    public Map<String, Object> importUsers(List<UserImportDTO> importList) {
 
-        log.info("Importing {} users", importList.size());
+    public Map<String, Object> importUsers(List<UserImportDTO> importList, String currentUserEmail) {
+
+        User currentUser = getCurrentUser(currentUserEmail);
+        validateAdmin(currentUser);
 
         for (UserImportDTO dto : importList) {
 
             User user = userRepository.findById(dto.getId())
-                    .orElseThrow(() ->
-                            new RuntimeException("User not found"));
+                    .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
 
             user.setUsername(dto.getUsername());
             user.setName(dto.getName());
@@ -196,8 +209,6 @@ public class UserService {
             userRepository.save(user);
         }
 
-        return Map.of("message", "Users imported successfully");
+        return Map.of("message", "USERS_IMPORTED_SUCCESS");
     }
-
-
 }
