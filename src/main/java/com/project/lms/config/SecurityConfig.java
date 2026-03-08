@@ -26,7 +26,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sess ->
@@ -42,10 +41,10 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // Public
+
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/organizations").authenticated()
-                        // Admin only
+
                         .requestMatchers(HttpMethod.POST, "/api/users").authenticated()
                         .requestMatchers("/api/users/*/approve").authenticated()
                         .requestMatchers("/api/users/*/reject").authenticated()
@@ -97,7 +96,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 }

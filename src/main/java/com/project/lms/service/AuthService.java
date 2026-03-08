@@ -74,6 +74,7 @@ public class AuthService {
             throw new InvalidCredentialsException("INVALID_ORGANIZATION");
         }
 
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("INVALID_CREDENTIALS");
         }

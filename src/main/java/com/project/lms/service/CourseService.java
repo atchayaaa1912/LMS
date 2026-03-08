@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
-
 
     private Course dtoToEntity(AddCourseDTO dto) {
 
@@ -85,8 +83,6 @@ public class CourseService {
         );
     }
 
-
-
     public List<CourseExportDTO> getAllCourses() {
 
         return courseRepository.findAll()
@@ -94,8 +90,6 @@ public class CourseService {
                 .map(this::entityToDto)
                 .toList();
     }
-
-
 
     public CourseExportDTO getCourseById(Long id) {
 
@@ -105,8 +99,6 @@ public class CourseService {
 
         return entityToDto(course);
     }
-
-
 
     public Map<String, Object> exportCourses() {
 
@@ -120,8 +112,6 @@ public class CourseService {
                 "data", courses
         );
     }
-
-
 
     private CourseExportDTO entityToDto(Course course) {
 
