@@ -26,14 +26,16 @@ public class Course {
     @Enumerated(EnumType.STRING)
     private CourseStatus status;
 
+    @Column(nullable = false)
     private Boolean active = true;
 
     private Long createdBy;
     private Long updatedBy;
     private Long organizationId;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Visibility visibility = Visibility.PRIVATE;
+    private Visibility visibility = Visibility.PUBLIC;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -42,8 +44,5 @@ public class Course {
         DRAFT,
         PUBLISHED
     }
-    public enum Visibility {
-        PRIVATE,
-        PUBLIC
-    }
+
 }

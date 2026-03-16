@@ -127,9 +127,9 @@ public class UserService {
             throw new IllegalStateException("USER_ALREADY_REJECTED");
         }
 
-        if (user.getStatus() == UserStatus.APPROVED) {
-            throw new IllegalStateException("APPROVED_USER_CANNOT_REJECT");
-        }
+//        if (user.getStatus() == UserStatus.APPROVED) {
+//            throw new IllegalStateException("APPROVED_USER_CANNOT_REJECT");
+//        }
 
         user.setStatus(UserStatus.REJECTED);
         userRepository.save(user);

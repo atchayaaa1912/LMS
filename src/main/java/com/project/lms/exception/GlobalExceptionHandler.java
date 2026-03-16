@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
         return messageSource.getMessage(
                 messageKey,
                 null,
-                messageKey, // fallback if key not found
+                messageKey,
                 LocaleContextHolder.getLocale()
         );
     }
@@ -35,8 +35,6 @@ public class GlobalExceptionHandler {
                 .status(status)
                 .body(Map.of("message", resolveMessage(messageKey)));
     }
-
-
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Map<String, String>> handleDuplicate(DuplicateResourceException ex) {
@@ -73,14 +71,10 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
-
-
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException ex) {
@@ -92,17 +86,16 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDatabaseError(DataIntegrityViolationException ex) {
         return buildResponse(HttpStatus.CONFLICT, "DATABASE_CONSTRAINT_ERROR");
     }
 
-
-
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+    public ResponseEntity<?> handleException(Exception ex) {
+
+        ex.printStackTrace(); // keep this for debugging
+
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR");
     }
 }
